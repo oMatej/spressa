@@ -1,0 +1,33 @@
+{
+  "name": "spressa",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "https://github.com/oMatej/spressa.git",
+  "author": "Mateusz Bindacz",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "bootstrap": "lerna bootstrap",
+    "start": "lerna run dev --parallel",
+    "clean": "lerna run clean --stream --parallel",
+    "prebuild": "lerna run prebuild",
+    "build": "yarn clean && yarn prebuild && lerna run build --stream --parallel",
+    "prettify": "yarn prettify \"packages/**/*.{js,jsx,ts,tsx}\" --write"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
+  },
+  "devDependencies": {
+    "husky": "^2.7.0",
+    "lerna": "^3.15.0",
+    "prettier": "^1.18.2",
+    "pretty-quick": "^1.11.1",
+    "rimraf": "^2.6.3",
+    "tslint-react": "^4.0.0"
+  }
+}

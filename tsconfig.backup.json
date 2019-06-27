@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@spressa/core/*": ["./spressa/core/src"],
+      "@spressa/react/*": ["./spressa/react/src"]
+    }
+  }
+}
