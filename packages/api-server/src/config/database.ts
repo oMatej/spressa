@@ -1,20 +1,24 @@
-const TYPE: string = 'mysql';
-const HOST: string = process.env.DATABASE_HOST;
-const PORT: number = parseInt(process.env.DATABASE_PORT, 10);
-const USER: string = process.env.DATABASE_USER;
-const PASSWORD: string = process.env.DATABASE_PASSWORD;
-const DATABASE_NAME: string = process.env.DATABASE_NAME;
-const LOGGING: boolean = process.env.DATABASE_LOGS === 'true';
-const RUN_MIGRATIONS: boolean = process.env.DATABASE_RUN_MIGRATIONS === 'true';
-const SYNC: boolean = process.env.DATABASE_SYNC === 'true';
+const TYPE: string = process.env.TYPEORM_CONNECTION || 'mysql';
+const TYPEORM_HOST: string = process.env.TYPEORM_HOST;
+const TYPEORM_PORT: number = parseInt(process.env.TYPEORM_PORT, 10);
+const TYPEORM_USERNAME: string = process.env.TYPEORM_USERNAME;
+const TYPEORM_PASSWORD: string = process.env.TYPEORM_PASSWORD;
+const TYPEORM_DATABASE: string = process.env.TYPEORM_DATABASE;
+const TYPEORM_LOGGING: boolean = process.env.TYPEORM_LOGGING === 'true';
+const TYPEORM_SYNCHRONIZE: boolean = process.env.TYPEORM_SYNCHRONIZE === 'true';
+const TYPEORM_ENTITIES: string[] = process.env.TYPEORM_ENTITIES ? process.env.TYPEORM_ENTITIES.split(',') : [];
 
-export const oauth = {
+const TYPEORM_MIGRATIONS: string[] = process.env.TYPEORM_MIGRATIONS ? process.env.TYPEORM_MIGRATIONS.split(',') : [];
+const TYPEORM_MIGRATIONS_RUN: boolean = process.env.TYPEORM_MIGRATIONS_RUN === 'true';
+const TYPEORM_MIGRATIONS_DIR: string = process.env.TYPEORM_MIGRATIONS_DIR;
+
+export default {
   type: TYPE,
-  host: HOST,
-  port: PORT,
-  username: USER,
-  password: PASSWORD,
-  database: DATABASE_NAME,
-  logging: LOGGING,
-  synchronize: SYNC,
+  host: TYPEORM_HOST,
+  port: TYPEORM_PORT,
+  username: TYPEORM_USERNAME,
+  password: TYPEORM_PASSWORD,
+  database: TYPEORM_DATABASE,
+  logging: TYPEORM_LOGGING,
+  synchronize: TYPEORM_SYNCHRONIZE,
 };

@@ -2,13 +2,18 @@ import * as path from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from 'nestjs-config';
 
-import { DatabaseModule, OAuthModule } from './modules';
+import { DatabaseModule } from './database';
+import { AccountModule } from './account';
+import { AuthenticationModule } from './authentication';
+import { AuthorizationModule } from './authorization';
 
 @Module({
   imports: [
     ConfigModule.load(path.resolve(__dirname, 'config', '**/!(*.d).{ts,js}')),
     DatabaseModule,
-    OAuthModule,
+    AccountModule,
+    AuthenticationModule,
+    AuthorizationModule,
   ],
   controllers: [],
   providers: [],
