@@ -15,6 +15,6 @@ export const oauth = {
   username: USER,
   password: PASSWORD,
   database: DATABASE_NAME,
-  logging: LOGGING,
+  // logging: LOGGING,
   synchronize: SYNC,
 };
