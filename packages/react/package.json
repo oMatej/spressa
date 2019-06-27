@@ -1,0 +1,36 @@
+{
+  "name": "@spressa/react",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "module": "dist/core.esm.js",
+  "typings": "dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "start": "tsdx watch",
+    "prebuild": "tsdx build",
+    "test": "tsdx test --env=jsdom",
+    "clean": "rimraf .rts2_cache_cjs .rts2_cache_esm .docz dist",
+    "docz:dev": "docz dev"
+  },
+  "peerDependencies": {
+    "react": ">=16",
+    "styled-components": "^4.3.2"
+  },
+  "dependencies": {
+    "@spressa/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.15",
+    "@types/node": "^12.0.10",
+    "@types/react": "^16.8.22",
+    "@types/react-dom": "^16.8.4",
+    "@types/styled-components": "^4.1.16",
+    "docz": "^1.2.0",
+    "docz-theme-default": "^1.2.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "tsdx": "^0.7.2",
+    "tslib": "^1.10.0",
+    "typescript": "^3.5.2"
+  }
+}
