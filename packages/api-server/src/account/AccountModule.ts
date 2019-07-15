@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 
 import { HashingModule } from '../hashing';
-import { AuthorizationModule } from '../authorization';
+import { AuthorizationModule, GUARD_SERVICE } from '../authorization';
 
 import { AccountRepository } from './repositories';
 
@@ -18,7 +18,13 @@ import { AccountService } from './AccountService';
     HashingModule,
   ],
   controllers: [AccountController],
-  providers: [AccountService],
+  providers: [
+    AccountService,
+    {
+      provide: GUARD_SERVICE,
+      useClass: AccountService,
+    },
+  ],
   exports: [AccountService],
 })
 export class AccountModule {}

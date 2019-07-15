@@ -1,11 +1,11 @@
 export class PaginationResponse {
   readonly total: number;
-  readonly page: number;
-  readonly limit: number;
+  readonly currentPage: number;
+  readonly totalPages: number;
 
-  constructor({ total, page, limit }) {
+  constructor({ page, pages, total }) {
     this.total = total;
-    this.page = page;
-    this.limit = limit;
+    this.currentPage = page;
+    this.totalPages = pages;
   }
 }

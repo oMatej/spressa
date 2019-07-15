@@ -19,7 +19,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   public async validate(jwtPayload: AuthPayload) {
     const { email, scopes, sub: id } = jwtPayload;
 
-    this.logger.debug(`Validated access_token with subject ${id}.`);
+    this.logger.debug(`*** JWTStrategy ***`);
+    this.logger.debug(JSON.stringify(jwtPayload));
+    this.logger.debug(`*** JWTStrategy ***`);
 
     return { email, id, scopes };
   }

@@ -34,6 +34,7 @@ export class TokenController {
   }
 
   @Get('/check')
+  @UseGuards(PermissionGuard)
   async checkToken(@BearerToken() token: string): Promise<any> {
     return await this.authenticationService.check(token);
   }

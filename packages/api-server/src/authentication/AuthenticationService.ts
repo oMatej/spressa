@@ -17,8 +17,8 @@ import * as isString from 'lodash/isString';
 import { AccountService } from '../account';
 import { Account } from '../account/entities';
 import { Permission } from '../authorization/enums';
-import { EncryptionService } from '../encryption';
-import { HashingService } from '../hashing';
+import { ENCRYPTION_SERVICE, EncryptionService } from '../encryption';
+import { HASHING_SERVICE, HashingService } from '../hashing';
 
 import { RevokeTokenResponse, SignUpBody } from './dtos';
 import { Token } from './entities';
@@ -47,14 +47,24 @@ export class AuthenticationService {
 
   constructor(
     private readonly configService: ConfigService,
-    @Inject('EncryptionService') private readonly encryptionService: EncryptionService,
-    @Inject('HashingService') private readonly hashingService: HashingService,
+    @Inject(ENCRYPTION_SERVICE) private readonly encryptionService: EncryptionService,
+    @Inject(HASHING_SERVICE) private readonly hashingService: HashingService,
     private readonly accountService: AccountService,
     private readonly jwtService: JwtService,
     private readonly tokenRepository: TokenRepository,
     private readonly mailerService: MailerService,
   ) {
     this.isProduction = this.configService.get('core.IS_PRODUCTION');
+  }
+
+  public async getAccountId(id: string): Promise<string> {
+    const token = await this.tokenRepository.findOne(id);
+
+    if (!token) {
+      return null;
+    }
+
+    return token.accountId;
   }
 
   /**
@@ -90,7 +100,7 @@ export class AuthenticationService {
   private async generateRefreshToken(account: Account, ip: string): Promise<string> {
     const { expiresAt, token } = this.generateRandomToken(
       128,
-      this.configService.get('core.JWT_REFRESH_TOKEN_LIFETIME'),
+      this.configService.get('auth.JWT_REFRESH_TOKEN_LIFETIME'),
     );
 
     const refreshTokenEntity: Token = this.tokenRepository.create({
@@ -184,7 +194,6 @@ export class AuthenticationService {
 
     const options: SignOptions = {
       subject: id,
-      // expiresIn: '5m',
       ...jwtOptions,
     };
 

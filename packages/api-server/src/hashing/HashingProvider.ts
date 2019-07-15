@@ -1,6 +1,7 @@
 import { HashingArgonService } from './HashingArgonService';
+import { HASHING_SERVICE } from './constants';
 
 export const HashingProvider = {
-  provide: 'HashingService',
+  provide: HASHING_SERVICE,
   useClass: HashingArgonService,
 };

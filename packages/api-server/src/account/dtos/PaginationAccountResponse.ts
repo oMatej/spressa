@@ -8,8 +8,8 @@ export class PaginationAccountResponse extends PaginationResponse {
   @Type(() => Account)
   readonly items: Account[];
 
-  constructor({ total, page, limit, items }) {
-    super({ total, page, limit });
+  constructor({ items, page, pages, total }) {
+    super({ page, pages, total });
     this.items = items;
   }
 }

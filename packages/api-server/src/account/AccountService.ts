@@ -7,31 +7,25 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { FindManyOptions, FindOneOptions } from 'typeorm';
+import { DeepPartial, EntityManager, FindManyOptions, FindOneOptions } from 'typeorm';
 
 import { PaginationQuery } from '../commons/dtos';
 import { ResponseCodes } from '../database/enums';
-import { HashingService } from '../hashing';
+import { HASHING_SERVICE, HashingService } from '../hashing';
 import { RoleService } from '../authorization';
 import { Role } from '../authorization/entities';
-import { Permission } from '../authorization/enums';
+import { InjectableGuardService } from '../authorization/interfaces';
 
-import { ChangePasswordBody, CreateAccountBody } from './dtos';
+import { ChangePasswordBody, CreateAccountBody, PaginationAccountResponse } from './dtos';
 import { Account } from './entities';
 import { AccountRepository } from './repositories';
-import { PaginationAccountResponse } from './dtos/PaginationAccountResponse';
-
-class OptionalAuthObject {
-  readonly accountId?: string;
-  readonly scope?: Permission;
-}
 
 @Injectable()
-export class AccountService {
+export class AccountService implements InjectableGuardService {
   private readonly logger: Logger = new Logger(AccountService.name, true);
 
   constructor(
-    @Inject('HashingService') private readonly hashingService: HashingService,
+    @Inject(HASHING_SERVICE) private readonly hashingService: HashingService,
     private readonly roleService: RoleService,
     private readonly accountRepository: AccountRepository,
   ) {}
@@ -52,11 +46,82 @@ export class AccountService {
   }
 
   /**
+   * @param id
+   */
+  public async getAccountId(id: string): Promise<string> {
+    return id;
+  }
+
+  /**
+   * Create an instance of Account entity.
+   * @param {Object} account
+   */
+  public create(account: DeepPartial<Account>): Account {
+    return this.accountRepository.create(account);
+  }
+
+  /**
+   * @param criteria
+   */
+  public async delete(criteria: string | string[]) {
+    return this.accountRepository.delete(criteria);
+  }
+
+  /**
+   * Find an Account[] entity(ies) by given options.
+   * @param {FindManyOptions<Account>}options
+   */
+  public async find(options: FindManyOptions<Account>): Promise<Account[]> {
+    return this.accountRepository.find(options);
+  }
+
+  /**
+   * Find an account that fulfills search criteria.
+   * @param {FindOneOptions<Account>} options
+   */
+  public async findOne(options: FindOneOptions<Account>): Promise<Account> {
+    this.logger.log(`findOne: Retrieving account. Options: ${JSON.stringify(options)}.`);
+
+    try {
+      const account: Account = await this.accountRepository.findOneOrFail(options);
+
+      this.logger.log(`findOne: Found account "${account.id}".`);
+
+      return account;
+    } catch (e) {
+      if (e.name === ResponseCodes.EntityNotFound) {
+        this.logger.log(`findOne: Account ${JSON.stringify(options)} does not exist.`);
+
+        throw new NotFoundException();
+      }
+
+      throw e;
+    }
+  }
+
+  /**
+   * Find account by id.
+   * @param {String} id
+   * @param {FindOneOptions<Account>} [options]
+   */
+  public async findOneById(id: string, options?: FindOneOptions<Account>): Promise<Account> {
+    return this.findOne({ where: { id }, ...options });
+  }
+
+  /**
+   * Store an instance of Account in database.
    * @param {Account} account
    */
-  private async save(account: Account) {
+  public async save(account: Account): Promise<Account>;
+  public async save(account: Account, transactionalEntityManager?: EntityManager): Promise<Account> {
+    this.logger.log(`save: Save an instance of ${account.id} in database.`);
+
     try {
-      await this.accountRepository.save(account);
+      if (transactionalEntityManager) {
+        return await transactionalEntityManager.save(account);
+      }
+
+      return await this.accountRepository.save(account);
     } catch (e) {
       this.logger.error(`${e.code}: Could not fulfill the request to create an account ${account.email}.`);
 
@@ -69,18 +134,22 @@ export class AccountService {
   }
 
   /**
+   * Update record in database by id.
+   * @param {Object} account
+   */
+  public async update(account: DeepPartial<Account>) {
+    this.logger.log(`update: Update account "${account.id}".`);
+
+    return this.accountRepository.update(account.id, account);
+  }
+
+  /**
+   * Update account password.
    * @param {String} id
    * @param {ChangePasswordBody} changePasswordBody
-   * @param {OptionalAuthObject} optionalAuthObject
    */
-  public async changePassword(
-    id: string,
-    changePasswordBody: ChangePasswordBody,
-    optionalAuthObject: OptionalAuthObject = {},
-  ): Promise<void> {
+  public async changeAccountPassword(id: string, changePasswordBody: ChangePasswordBody): Promise<void> {
     this.logger.log(`changePassword: Attempted to change password of account "${id}".`);
-
-    this.filterUnauthorizedAttempts(id, [Permission.ACCOUNT_UPDATE_OWNER], optionalAuthObject);
 
     const { currentPassword, newPassword } = changePasswordBody;
 
@@ -112,16 +181,9 @@ export class AccountService {
     const roles: Role[] = await this.roleService.getDefault();
     const hash: string = await this.hash(password);
 
-    const account: Account = await this.accountRepository.create({
-      email,
-      username,
-      password: hash,
-      roles,
-    });
+    const account: Account = this.create({ email, username, password: hash, roles });
 
     await this.save(account);
-
-    delete account.roles;
 
     this.logger.log(`createAccount: Successfully created account "${email}".`);
 
@@ -129,40 +191,15 @@ export class AccountService {
   }
 
   /**
-   * Delete account by where query.
+   * Delete account by id.
    * @param {String} id
-   * @param {OptionalAuthObject} [optionalAuthObject]
    */
-  public async deleteAccount(id: string, optionalAuthObject: OptionalAuthObject): Promise<void> {
+  public async deleteAccount(id: string): Promise<void> {
     this.logger.log(`deleteAccount: Attempted to delete account "${id}".`);
 
-    this.filterUnauthorizedAttempts(id, [Permission.ACCOUNT_DELETE_OWNER], optionalAuthObject);
-
-    await this.accountRepository.delete({ id });
+    await this.delete(id);
 
     this.logger.log(`deleteAccount: Successfully deleted account "${id}".`);
-  }
-
-  /**
-   * TODO: Find a way to move to to guard / decorator.
-   * @param {String} id
-   * @param {Permission[]} filter
-   * @param {OptionalAuthObject} optionalAuthObject
-   */
-  private filterUnauthorizedAttempts(id: string, filter: Permission[], optionalAuthObject: OptionalAuthObject = {}) {
-    const { scope, accountId } = optionalAuthObject;
-
-    if (filter.includes(scope) && id !== accountId) {
-      this.logger.warn(`Account "${accountId}" attempted to perform an action on "${id}" with scope "${scope}".`);
-      throw new UnauthorizedException();
-    }
-  }
-
-  /**
-   * @param options
-   */
-  public async find(options: FindManyOptions): Promise<Account[]> {
-    return this.accountRepository.find(options);
   }
 
   /**
@@ -176,14 +213,19 @@ export class AccountService {
 
     const skip: number = page * limit - limit;
 
-    const total = await this.accountRepository.count();
-    const items = await this.find({ skip, take: limit, order: { createdAt: order } });
+    const [items, total] = await this.accountRepository.findAndCount({
+      skip,
+      take: limit,
+      order: { createdAt: order },
+    });
+
+    const pages = total / limit > 1 ? Math.ceil(total / limit) : 1;
 
     this.logger.log(`fondAccountPagination: Fulfilled request. Total amount of accounts: ${total}.`);
 
     return new PaginationAccountResponse({
-      page: skip + 1,
-      limit,
+      page,
+      pages,
       total,
       items,
     });
@@ -203,41 +245,13 @@ export class AccountService {
   }
 
   /**
-   * Find an account that fulfills search criteria.
-   * @param {FindOneOptions} options
-   */
-  public async findOne(options: FindOneOptions): Promise<Account> {
-    this.logger.log(`findOne: Retrieving account. Options: ${JSON.stringify(options)}.`);
-
-    const account: Account = await this.accountRepository.findOne(options);
-
-    if (!account) {
-      this.logger.log(`findOne: Account ${JSON.stringify(options)} does not exist.`);
-
-      throw new NotFoundException();
-    }
-
-    this.logger.log(`findOne: Found account "${account.id}".`);
-
-    return account;
-  }
-
-  /**
-   * Find account by id.
-   * @param {String} id
-   */
-  public async findOneById(id: string): Promise<Account> {
-    return this.findOne({ where: { id } });
-  }
-
-  /**
    * @param {String} id
    * @param {String} roleId
    */
   public async toggleRoleRelation(id: string, roleId: string): Promise<void> {
     this.logger.log(`toggleRoleRelation: Toggle relation between account "${id}" and role "${roleId}".`);
 
-    const account = await this.findOne({ where: { id }, relations: ['roles'] });
+    const account: Account = await this.findOne({ where: { id }, relations: ['roles'] });
 
     const { roles } = account;
 
@@ -256,11 +270,5 @@ export class AccountService {
     }
 
     await this.save(account);
-  }
-
-  public async update(account: Account) {
-    this.logger.log(`update: Update account "${account.id}".`);
-
-    return this.accountRepository.update(account.id, account);
   }
 }

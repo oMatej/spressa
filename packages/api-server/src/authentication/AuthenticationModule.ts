@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule } from 'nestjs-config';
 
 import { AccountModule } from '../account';
+import { GUARD_SERVICE } from '../authorization';
 import { EncryptionModule } from '../encryption';
 import { HashingModule } from '../hashing';
 import { MailModule } from '../mail';
@@ -28,7 +29,14 @@ import { TokenController } from './TokenController';
     MailModule,
   ],
   controllers: [AuthenticationController, TokenController],
-  providers: [AuthenticationService, JwtStrategy],
+  providers: [
+    AuthenticationService,
+    JwtStrategy,
+    {
+      provide: GUARD_SERVICE,
+      useClass: AuthenticationService,
+    },
+  ],
   exports: [AuthenticationService, PassportModule],
 })
 export class AuthenticationModule {}

@@ -15,16 +15,14 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { classToPlain } from 'class-transformer';
 
 import { PaginationQuery } from '../commons/dtos';
 import { PermissionGuard } from '../authorization/guards';
-import { Authorize, AuthorizedScope } from '../authorization/decorators';
+import { Authorize } from '../authorization/decorators';
 import { Role } from '../authorization/entities';
 import { Permission } from '../authorization/enums';
 
-import { Account as GetAccount } from './decorators';
-import { ChangePasswordBody, CreateAccountBody } from './dtos';
+import { ChangePasswordBody, CreateAccountBody, PaginationAccountResponse } from './dtos';
 import { Account } from './entities';
 
 import { AccountService } from './AccountService';
@@ -37,20 +35,14 @@ export class AccountController {
 
   /**
    * Get all accounts.
-   * TODO: Finish pagination.
    */
   @Get('/')
   @Authorize(Permission.ADMIN, Permission.ACCOUNT_READ)
   @UsePipes(new ValidationPipe({ transform: true }))
-  public async findAccounts(
-    @Query() paginationQuery: PaginationQuery,
-    @AuthorizedScope() scope: Permission,
-  ): Promise<object> {
-    const response = await this.accountService.findAccountPagination(paginationQuery);
-
+  public async findAccounts(@Query() paginationQuery: PaginationQuery): Promise<PaginationAccountResponse> {
     // Send different responses depending on user permissions.
     // TODO: Create custom ClassSerializerInterceptor which will handle such case.
-    return classToPlain(response, { groups: [scope] });
+    return this.accountService.findAccountPagination(paginationQuery);
   }
 
   /**
@@ -77,33 +69,22 @@ export class AccountController {
 
   /**
    * Delete a matching account.
-   * TODO: Finish authorization. Stop the request before the controller if account without ADMIN permission attempts to remove someone else's account.
    */
   @Delete('/:id')
-  @Authorize(Permission.ADMIN, Permission.ACCOUNT_DELETE, Permission.ACCOUNT_DELETE_OWNER)
-  async deleteAccount(
-    @Param('id') id: string,
-    @GetAccount('id') accountId: string,
-    @AuthorizedScope() scope: Permission,
-  ): Promise<void> {
-    return this.accountService.deleteAccount(id, { accountId, scope });
+  @Authorize(Permission.ADMIN, Permission.ACCOUNT_DELETE_OWNER)
+  async deleteAccount(@Param('id') id: string): Promise<void> {
+    return this.accountService.deleteAccount(id);
   }
 
   /**
    * Change password of matching account.
-   * TODO: Finish authorization. Stop the request before the controller if account without ADMIN permission attempts to remove someone else's account.
    */
   @Post('/:id/password')
   @HttpCode(200)
-  @Authorize(Permission.ADMIN, Permission.ACCOUNT_UPDATE, Permission.ACCOUNT_UPDATE_OWNER)
+  @Authorize(Permission.ADMIN, Permission.ACCOUNT_UPDATE_OWNER)
   @UsePipes(new ValidationPipe({ whitelist: true, validateCustomDecorators: true }))
-  async changePassword(
-    @Param('id') id: string,
-    @GetAccount('id') accountId: string,
-    @AuthorizedScope() scope: Permission,
-    @Body() changePasswordBody: ChangePasswordBody,
-  ): Promise<void> {
-    return this.accountService.changePassword(id, changePasswordBody, { accountId, scope });
+  async changePassword(@Param('id') id: string, @Body() changePasswordBody: ChangePasswordBody): Promise<void> {
+    return this.accountService.changeAccountPassword(id, changePasswordBody);
   }
 
   /**

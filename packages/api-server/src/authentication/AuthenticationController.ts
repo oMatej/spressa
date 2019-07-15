@@ -9,7 +9,6 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ConfigService } from 'nestjs-config';
 
 import { Account } from '../account/entities';
 
@@ -19,10 +18,7 @@ import { AuthResponse, AuthenticationService } from './AuthenticationService';
 
 @Controller('/auth')
 export class AuthenticationController {
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly authenticationService: AuthenticationService,
-  ) {}
+  constructor(private readonly authenticationService: AuthenticationService) {}
 
   @Post('/login')
   @UseInterceptors(ClassSerializerInterceptor)

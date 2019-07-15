@@ -1,3 +1,3 @@
 export * from './AuthorizationModule';
-export * from './AuthorizationService';
 export * from './RoleService';
+export { GUARD_SERVICE } from './guards';
