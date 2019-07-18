@@ -2,7 +2,7 @@ import { BeforeInsert, BeforeUpdate, Column, Entity, JoinTable, ManyToMany, OneT
 import { Exclude, Expose } from 'class-transformer';
 
 import { BaseEntity } from '../../commons/entities';
-import { Token } from '../../authentication/entities';
+import { Token } from '../../token/entities';
 import { Role } from '../../authorization/entities';
 import { Permission } from '../../authorization/enums';
 

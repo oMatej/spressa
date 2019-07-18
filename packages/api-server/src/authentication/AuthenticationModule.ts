@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule } from 'nestjs-config';
 
@@ -10,16 +9,13 @@ import { HashingModule } from '../hashing';
 import { MailModule } from '../mail';
 import { TokenModule } from '../token';
 
-import { TokenRepository } from './repositories';
 import { JwtStrategy } from './strategies';
 
 import { AuthenticationController } from './AuthenticationController';
 import { AuthenticationService } from './AuthenticationService';
-import { TokenController } from './TokenController';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TokenRepository]),
     PassportModule.register({ defaultStrategy: 'jwt', property: 'account' }),
     ConfigModule,
     EncryptionModule,
@@ -28,7 +24,7 @@ import { TokenController } from './TokenController';
     AccountModule,
     MailModule,
   ],
-  controllers: [AuthenticationController, TokenController],
+  controllers: [AuthenticationController],
   providers: [
     AuthenticationService,
     JwtStrategy,
@@ -37,6 +33,6 @@ import { TokenController } from './TokenController';
       useClass: AuthenticationService,
     },
   ],
-  exports: [AuthenticationService, PassportModule],
+  exports: [AuthenticationService],
 })
 export class AuthenticationModule {}

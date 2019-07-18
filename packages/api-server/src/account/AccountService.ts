@@ -26,8 +26,8 @@ export class AccountService implements InjectableGuardService {
 
   constructor(
     @Inject(HASHING_SERVICE) private readonly hashingService: HashingService,
-    private readonly roleService: RoleService,
     private readonly accountRepository: AccountRepository,
+    private readonly roleService: RoleService,
   ) {}
 
   /**
@@ -111,10 +111,10 @@ export class AccountService implements InjectableGuardService {
   /**
    * Store an instance of Account in database.
    * @param {Account} account
+   * @param {EntityManager} transactionalEntityManager
    */
-  public async save(account: Account): Promise<Account>;
   public async save(account: Account, transactionalEntityManager?: EntityManager): Promise<Account> {
-    this.logger.log(`save: Save an instance of ${account.id} in database.`);
+    this.logger.log(`save: Save an instance of ${account.username} in database.`);
 
     try {
       if (transactionalEntityManager) {
@@ -136,9 +136,14 @@ export class AccountService implements InjectableGuardService {
   /**
    * Update record in database by id.
    * @param {Object} account
+   * @param transactionalEntityManager
    */
-  public async update(account: DeepPartial<Account>) {
+  public async update(account: DeepPartial<Account>, transactionalEntityManager?: EntityManager) {
     this.logger.log(`update: Update account "${account.id}".`);
+
+    if (transactionalEntityManager) {
+      return transactionalEntityManager.update(Account, account.id, account);
+    }
 
     return this.accountRepository.update(account.id, account);
   }
@@ -172,8 +177,12 @@ export class AccountService implements InjectableGuardService {
    * Create new account with unique username and email address.
    * Attach default roles to each newly created account.
    * @param {CreateAccountBody} createAccountBody
+   * @param {EntityManager} transactionalEntityManager
    */
-  public async createAccount(createAccountBody: CreateAccountBody): Promise<Account> {
+  public async createAccount(
+    createAccountBody: CreateAccountBody,
+    transactionalEntityManager?: EntityManager,
+  ): Promise<Account> {
     const { email, username, password } = createAccountBody;
 
     this.logger.log(`createAccount: Attempted to create an account "${email}".`);
@@ -183,7 +192,7 @@ export class AccountService implements InjectableGuardService {
 
     const account: Account = this.create({ email, username, password: hash, roles });
 
-    await this.save(account);
+    await this.save(account, transactionalEntityManager);
 
     this.logger.log(`createAccount: Successfully created account "${email}".`);
 

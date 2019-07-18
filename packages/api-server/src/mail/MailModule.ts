@@ -15,8 +15,8 @@ const mailerProvider = MailerModule.forRoot({
     host: 'smtp.ethereal.email',
     port: 587,
     auth: {
-      user: 'ronny77@ethereal.email',
-      pass: 'nKRxhm6d8CYXURE89x',
+      user: 'jewel14@ethereal.email',
+      pass: 'VGDb9YbpST8NAFEagX',
     },
   },
   defaults: {

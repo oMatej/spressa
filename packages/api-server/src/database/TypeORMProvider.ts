@@ -2,7 +2,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from 'nestjs-config';
 
 import { Account } from '../account/entities';
-import { Token } from '../authentication/entities';
+import { Token } from '../token/entities';
 import { Role } from '../authorization/entities';
 
 export const TypeORMProvider = TypeOrmModule.forRootAsync({
