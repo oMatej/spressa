@@ -1,18 +1,17 @@
-export const HOST = 'smtp.ethereal.email';
-export const PORT = 587;
-export const USERNAME = 'ronny77@ethereal.email';
-export const PASSWORD = 'nKRxhm6d8CYXURE89x';
+export const TESTING = process.env.MAIL_TESTING === 'true';
+const HOST = process.env.MAIL_HOST;
+const PORT = parseInt(process.env.MAIL_PORT, 10);
+const USERNAME = process.env.MAIL_USER;
+const PASSWORD = process.env.MAIL_PASS;
 
-export const FROM = '';
+const FROM = '';
 
-export const test = {
-  transport: {
-    host: HOST,
-    port: PORT,
-    auth: {
-      user: USERNAME,
-      pass: PASSWORD,
-    },
+export const transport = {
+  host: HOST,
+  port: PORT,
+  auth: {
+    user: USERNAME,
+    pass: PASSWORD,
   },
 };
 

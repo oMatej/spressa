@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from 'nestjs-config';
-import { MailerService } from '@nest-modules/mailer';
+import { InjectEventEmitter } from 'nest-emitter';
 import { getManager } from 'typeorm';
 import { SignOptions } from 'jsonwebtoken';
 import * as uniq from 'lodash/uniq';
@@ -19,6 +19,7 @@ import { Account } from '../account/entities';
 import { Permission } from '../authorization/enums';
 import { ENCRYPTION_SERVICE, EncryptionService } from '../encryption';
 import { HASHING_SERVICE, HashingService } from '../hashing';
+import { MyEventEmitter } from '../mail';
 import { TokenService } from '../token';
 
 import { SignUpBody } from './dtos';
@@ -43,7 +44,6 @@ export class AuthenticationService {
   static readonly prefix: string = 'Bearer';
 
   private readonly logger: Logger = new Logger(AuthenticationService.name, true);
-  private readonly isProduction: boolean = false;
 
   constructor(
     private readonly configService: ConfigService,
@@ -51,11 +51,9 @@ export class AuthenticationService {
     @Inject(HASHING_SERVICE) private readonly hashingService: HashingService,
     private readonly accountService: AccountService,
     private readonly jwtService: JwtService,
-    private readonly mailerService: MailerService,
     private readonly tokenService: TokenService,
-  ) {
-    this.isProduction = this.configService.get('core.IS_PRODUCTION');
-  }
+    @InjectEventEmitter() private readonly emitter: MyEventEmitter,
+  ) {}
 
   /**
    * @param {String} activateToken
@@ -250,20 +248,13 @@ export class AuthenticationService {
     }
 
     const { email, username } = account;
-    const name = this.configService.get('core.SERVICE_NAME');
-    const url = this.configService.get('core.SERVICE_URL');
 
-    await this.mailerService.sendMail({
-      to: this.isProduction ? email : 'jewel14@ethereal.email',
-      subject: `${name}: Activate account ${username}`,
-      text: `${url}/api/auth/activate/${token.token}`,
-      html: `
-        <h3>Hello, ${username}</h3>
-        <p>
-            You have to click on
-            <strong><a href="${url}/auth/activate/${token.token}">THIS</a></strong>
-            link to activate your account.
-        </p>`,
-    });
+    this.logger.log('sendActivationMail: Before event.');
+
+    this.emitter.emit('sendRegistrationMail', email, username, token.token);
+
+    this.logger.log('sendActivationMail: After event.');
+
+    // await this.mailService.sendRegistrationMail(email, username, token.token);
   }
 }

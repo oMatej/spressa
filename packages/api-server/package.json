@@ -37,6 +37,7 @@
     "lodash": "^4.17.14",
     "mysql": "^2.17.1",
     "nanoid": "^2.0.3",
+    "nest-emitter": "^1.1.0",
     "nestjs-config": "^1.4.2",
     "oauth2-server": "^3.0.1",
     "passport": "^0.4.0",
