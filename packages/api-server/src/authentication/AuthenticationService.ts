@@ -76,7 +76,7 @@ export class AuthenticationService {
 
     await getManager().transaction(async transactionalEntityManager => {
       await this.tokenService.delete(token.id, transactionalEntityManager);
-      await this.accountService.update(account, transactionalEntityManager);
+      await this.accountService.update(account.id, account, transactionalEntityManager);
     });
 
     this.logger.log(`activate: Activated account "${account.id}".`);

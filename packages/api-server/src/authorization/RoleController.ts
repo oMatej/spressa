@@ -8,15 +8,17 @@ import {
   Patch,
   Post,
   Put,
+  SerializeOptions,
   UseGuards,
   UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { DeleteResult } from 'typeorm';
 import { ConfigService } from 'nestjs-config';
 
 import { Authorize } from './decorators';
-import { CreateRole, DeleteRoleResponse } from './dtos';
+import { CreateRole, UpdateRole } from './dtos';
 import { Role } from './entities';
 import { Permission } from './enums';
 import { PermissionGuard } from './guards';
@@ -25,38 +27,42 @@ import { RoleService } from './RoleService';
 
 @Controller('/roles')
 @UseGuards(PermissionGuard)
+@UseInterceptors(ClassSerializerInterceptor)
 export class RoleController {
   constructor(private readonly configService: ConfigService, private readonly roleService: RoleService) {}
 
   @Get('/')
   @Authorize(Permission.ADMIN)
+  @SerializeOptions({
+    groups: [Permission.ADMIN],
+  })
   async getAll(): Promise<Role[]> {
     return this.roleService.find();
   }
 
   @Post('/')
   @Authorize(Permission.ADMIN)
-  @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async create(@Body() createRoleBody: CreateRole) {
-    return this.roleService.create(createRoleBody);
+    return this.roleService.createRole(createRoleBody);
   }
 
   @Put('/:id')
   @Authorize(Permission.ADMIN)
-  async update(@Param('id') id: string, @Body() updateRoleBody: CreateRole): Promise<Role> {
-    return this.roleService.update(id, updateRoleBody);
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async update(@Param('id') id: string, @Body() updateRoleBody: UpdateRole): Promise<Role> {
+    return this.roleService.updateRole(id, updateRoleBody);
   }
 
   @Delete('/:id')
   @Authorize(Permission.ADMIN)
-  async delete(@Param('id') id: string): Promise<DeleteRoleResponse> {
+  async delete(@Param('id') id: string): Promise<DeleteResult> {
     return this.roleService.delete(id);
   }
 
   @Patch('/:id/status')
   @Authorize(Permission.ADMIN)
   async toggleStatus(@Param('id') id: string): Promise<Role> {
-    return this.roleService.toggleStatus(id);
+    return this.roleService.toggleRoleStatus(id);
   }
 }

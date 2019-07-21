@@ -10,12 +10,13 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from 'nestjs-config';
-import { DeepPartial, EntityManager, FindManyOptions, FindOneOptions } from 'typeorm';
+import { DeepPartial, EntityManager, FindManyOptions, FindOneOptions, UpdateResult } from 'typeorm';
 import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError';
 import * as nanoId from 'nanoid';
 
 import { AccountService } from '../account';
 import { InjectableGuardService } from '../authorization/interfaces';
+import { Criteria, RepositoryFacade } from '../commons/interfaces';
 import { ENCRYPTION_SERVICE, EncryptionService } from '../encryption';
 import { HASHING_SERVICE, HashingService } from '../hashing';
 
@@ -32,7 +33,7 @@ export interface RandomToken {
 }
 
 @Injectable()
-export class TokenService implements InjectableGuardService {
+export class TokenService implements InjectableGuardService, RepositoryFacade<Token> {
   static readonly prefix: string = 'Bearer';
 
   private readonly logger: Logger = new Logger(TokenService.name, true);
@@ -60,10 +61,7 @@ export class TokenService implements InjectableGuardService {
    * @param criteria
    * @param transactionalEntityManager
    */
-  public async delete(
-    criteria: string | string[] | Token | DeepPartial<Token>,
-    transactionalEntityManager?: EntityManager,
-  ) {
+  public async delete(criteria: Criteria<Token>, transactionalEntityManager?: EntityManager) {
     if (transactionalEntityManager) {
       return transactionalEntityManager.delete(Token, criteria);
     }
@@ -126,6 +124,14 @@ export class TokenService implements InjectableGuardService {
 
       throw new InternalServerErrorException();
     }
+  }
+
+  update(
+    criteria: Criteria<Token>,
+    partialEntity: DeepPartial<Token>,
+    transactionalEntityManager?: EntityManager,
+  ): Promise<UpdateResult> {
+    throw new InternalServerErrorException();
   }
 
   /**

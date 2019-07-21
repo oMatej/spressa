@@ -1,36 +1,86 @@
 import { ConflictException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from 'nestjs-config';
-import { FindManyOptions } from 'typeorm';
-import * as slug from 'slug';
+import { DeepPartial, DeleteResult, EntityManager, FindManyOptions, FindOneOptions, UpdateResult } from 'typeorm';
+import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError';
 
+import { Criteria, RepositoryFacade } from '../commons/interfaces';
 import { ResponseCodes } from '../database/enums';
 
 import { Role } from './entities';
 import { RoleRepository } from './repositories';
-import { CreateRole, DeleteRoleResponse } from './dtos';
 
 @Injectable()
-export class RoleService {
+export class RoleService implements RepositoryFacade<Role> {
   private readonly logger: Logger = new Logger(RoleService.name, true);
 
   constructor(private readonly configService: ConfigService, private readonly roleRepository: RoleRepository) {}
 
-  private getSlug(role: CreateRole): string {
-    if (role.slug) {
-      return role.slug.toLowerCase();
-    }
+  /**
+   * @param {DeepPartial<Role>} entityLike
+   */
+  public create(entityLike: DeepPartial<Role>): Role {
+    return this.roleRepository.create(entityLike);
+  }
 
-    return slug(role.name).toLowerCase();
+  /**
+   * @param {Criteria<Role>} criteria
+   * @param {EntityManager} transactionalEntityManager
+   */
+  public async delete(criteria: Criteria<Role>, transactionalEntityManager?: EntityManager): Promise<DeleteResult> {
+    return this.roleRepository.delete(criteria);
+  }
+
+  /**
+   * @param {FindManyOptions<Role>} options
+   */
+  public async find(options?: FindManyOptions<Role>): Promise<Role[]> {
+    return this.roleRepository.find(options);
+  }
+
+  /**
+   * @param {FindOneOptions<Role>} options
+   */
+  public async findOne(options?: FindOneOptions<Role>): Promise<Role> {
+    this.logger.log(`findOne: Retrieving role. Options: ${JSON.stringify(options)}.`);
+
+    try {
+      const role: Role = await this.roleRepository.findOneOrFail(options);
+
+      this.logger.log(`findOne: Found role "${role.id}".`);
+
+      return role;
+    } catch (e) {
+      if (e instanceof EntityNotFoundError) {
+        this.logger.log(`findOne: Role ${JSON.stringify(options)} does not exist.`);
+
+        throw new NotFoundException();
+      }
+
+      throw e;
+    }
+  }
+
+  /**
+   * @param {String} id
+   * @param {FindOneOptions<Role>} options
+   */
+  public async findOneById(id: string, options?: FindOneOptions<Role>): Promise<Role> {
+    return this.findOne({ where: { id }, ...options });
   }
 
   /**
    * @param {Role} role
+   * @param {EntityManager} transactionalEntityManager
    */
-  private async save(role: Role) {
+  public async save(role: Role, transactionalEntityManager?: EntityManager): Promise<Role> {
     try {
+      if (transactionalEntityManager) {
+        return await transactionalEntityManager.save(role);
+      }
+
       return await this.roleRepository.save(role);
     } catch (e) {
-      this.logger.warn(`Role with slug ${role.slug} already exists.`);
+      this.logger.warn(e.code);
 
       if (e.code === ResponseCodes.ER_DUP_ENTRY) {
         throw new ConflictException();
@@ -41,13 +91,27 @@ export class RoleService {
   }
 
   /**
-   * @param {CreateRole} createRoleBody
+   * @param {Criteria<Role>} criteria
+   * @param {DeepPartial<Role>} partialEntity
+   * @param {EntityManager} transactionalEntityManager
    */
-  public async create(createRoleBody: CreateRole): Promise<Role> {
-    const role = this.roleRepository.create({
-      ...createRoleBody,
-      slug: this.getSlug(createRoleBody),
-    });
+  public async update(
+    criteria: Criteria<Role>,
+    partialEntity: DeepPartial<Role>,
+    transactionalEntityManager?: EntityManager,
+  ): Promise<UpdateResult> {
+    if (transactionalEntityManager) {
+      return transactionalEntityManager.update(Role, criteria, partialEntity);
+    }
+
+    return this.roleRepository.update(criteria, partialEntity);
+  }
+
+  /**
+   * @param {DeepPartial<Role>} createRoleBody
+   */
+  public async createRole(createRoleBody: DeepPartial<Role>): Promise<Role> {
+    const role = this.create(createRoleBody);
 
     try {
       const count = await this.roleRepository.count();
@@ -61,34 +125,17 @@ export class RoleService {
 
   /**
    * @param {String} id
+   * @param {DeepPartial<Role>} updateRoleBody
    */
-  public async delete(id: string): Promise<DeleteRoleResponse> {
-    await this.roleRepository.delete({ id });
+  public async updateRole(id: string, updateRoleBody: DeepPartial<Role>): Promise<Role> {
+    const role: Role = await this.findOneById(id);
 
-    return { id };
+    const updatedRole: Role = this.roleRepository.merge(role, updateRoleBody);
+
+    return this.save(updatedRole);
   }
 
-  /**
-   * @param {FindManyOptions} options
-   */
-  public async find(options?: FindManyOptions): Promise<Role[]> {
-    return this.roleRepository.find(options);
-  }
-
-  /**
-   * @param {String} id
-   */
-  public async findById(id: string): Promise<Role> {
-    const role = await this.roleRepository.findOne(id);
-
-    if (!role) {
-      throw new NotFoundException();
-    }
-
-    return role;
-  }
-
-  public async getDefault(): Promise<Role[]> {
+  public async findDefaultRoles(): Promise<Role[]> {
     try {
       return this.find({ where: { isDefault: true } });
     } catch (e) {
@@ -99,27 +146,9 @@ export class RoleService {
 
   /**
    * @param {String} id
-   * @param {CreateRole} updateRoleBody
    */
-  public async update(id: string, updateRoleBody: CreateRole): Promise<Role> {
-    const role = await this.findById(id);
-
-    const updatedRole = await this.roleRepository.create({
-      ...role,
-      ...updateRoleBody,
-      slug: this.getSlug(updateRoleBody),
-    });
-
-    await this.save(updatedRole);
-
-    return updatedRole;
-  }
-
-  /**
-   * @param {String} id
-   */
-  public async toggleStatus(id: string): Promise<Role> {
-    const role = await this.findById(id);
+  public async toggleRoleStatus(id: string): Promise<Role> {
+    const role = await this.findOneById(id);
 
     role.isDefault = !role.isDefault;
 

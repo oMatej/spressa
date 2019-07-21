@@ -7,9 +7,11 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { DeepPartial, EntityManager, FindManyOptions, FindOneOptions } from 'typeorm';
+import { DeepPartial, DeleteResult, EntityManager, FindManyOptions, FindOneOptions, UpdateResult } from 'typeorm';
+import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError';
 
 import { PaginationQuery } from '../commons/dtos';
+import { Criteria, RepositoryFacade } from '../commons/interfaces';
 import { ResponseCodes } from '../database/enums';
 import { HASHING_SERVICE, HashingService } from '../hashing';
 import { RoleService } from '../authorization';
@@ -21,7 +23,7 @@ import { Account } from './entities';
 import { AccountRepository } from './repositories';
 
 @Injectable()
-export class AccountService implements InjectableGuardService {
+export class AccountService implements InjectableGuardService, RepositoryFacade<Account> {
   private readonly logger: Logger = new Logger(AccountService.name, true);
 
   constructor(
@@ -54,16 +56,21 @@ export class AccountService implements InjectableGuardService {
 
   /**
    * Create an instance of Account entity.
-   * @param {Object} account
+   * @param {DeepPartial<Account>} entityLike
    */
-  public create(account: DeepPartial<Account>): Account {
-    return this.accountRepository.create(account);
+  create(entityLike: DeepPartial<Account>): Account {
+    return this.accountRepository.create(entityLike);
   }
 
   /**
-   * @param criteria
+   * @param {Criteria<Account>} criteria
+   * @param {EntityManager} transactionalEntityManager
    */
-  public async delete(criteria: string | string[]) {
+  public delete(criteria: Criteria<Account>, transactionalEntityManager?: EntityManager): Promise<DeleteResult> {
+    if (transactionalEntityManager) {
+      return transactionalEntityManager.delete(Account, criteria);
+    }
+
     return this.accountRepository.delete(criteria);
   }
 
@@ -89,7 +96,7 @@ export class AccountService implements InjectableGuardService {
 
       return account;
     } catch (e) {
-      if (e.name === ResponseCodes.EntityNotFound) {
+      if (e instanceof EntityNotFoundError) {
         this.logger.log(`findOne: Account ${JSON.stringify(options)} does not exist.`);
 
         throw new NotFoundException();
@@ -135,17 +142,22 @@ export class AccountService implements InjectableGuardService {
 
   /**
    * Update record in database by id.
-   * @param {Object} account
+   * @param {Criteria<Account>} criteria
+   * @param {DeepPartial<Account>} partialEntity
    * @param transactionalEntityManager
    */
-  public async update(account: DeepPartial<Account>, transactionalEntityManager?: EntityManager) {
-    this.logger.log(`update: Update account "${account.id}".`);
+  public async update(
+    criteria: Criteria<Account>,
+    partialEntity: DeepPartial<Account>,
+    transactionalEntityManager?: EntityManager,
+  ): Promise<UpdateResult> {
+    this.logger.log(`update: Update account "${criteria}".`);
 
     if (transactionalEntityManager) {
-      return transactionalEntityManager.update(Account, account.id, account);
+      return transactionalEntityManager.update(Account, criteria, partialEntity);
     }
 
-    return this.accountRepository.update(account.id, account);
+    return this.accountRepository.update(criteria, partialEntity);
   }
 
   /**
@@ -187,7 +199,7 @@ export class AccountService implements InjectableGuardService {
 
     this.logger.log(`createAccount: Attempted to create an account "${email}".`);
 
-    const roles: Role[] = await this.roleService.getDefault();
+    const roles: Role[] = await this.roleService.findDefaultRoles();
     const hash: string = await this.hash(password);
 
     const account: Account = this.create({ email, username, password: hash, roles });
@@ -271,7 +283,7 @@ export class AccountService implements InjectableGuardService {
 
       account.roles = account.roles.filter(role => role.id !== roleId);
     } else {
-      const role = await this.roleService.findById(roleId);
+      const role = await this.roleService.findOneById(roleId);
 
       this.logger.log(`toggleRoleRelation: Attach relation between account "${id}" and role "${roleId}".`);
 
