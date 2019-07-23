@@ -16,15 +16,16 @@ import * as isString from 'lodash/isString';
 
 import { AccountService } from '../account';
 import { Account } from '../account/entities';
+import { AccountStatus } from '../account/enums';
 import { Permission } from '../authorization/enums';
 import { ENCRYPTION_SERVICE, EncryptionService } from '../encryption';
 import { HASHING_SERVICE, HashingService } from '../hashing';
 import { MyEventEmitter } from '../mail';
 import { TokenService } from '../token';
-
-import { SignUpBody } from './dtos';
 import { Token } from '../token/entities';
 import { TokenTypes } from '../token/enums';
+
+import { SignUpBody } from './dtos';
 
 export interface AuthResponse {
   readonly type: string;
@@ -70,7 +71,7 @@ export class AuthenticationService {
 
     const { account } = token;
 
-    account.isActivated = true;
+    account.status = AccountStatus.ACTIVATED;
 
     await getManager().transaction(async transactionalEntityManager => {
       await this.tokenService.delete(token.id, transactionalEntityManager);
@@ -108,7 +109,7 @@ export class AuthenticationService {
       throw new UnauthorizedException();
     }
 
-    if (!account.isActivated) {
+    if (account.status !== AccountStatus.ACTIVATED) {
       this.logger.log(`attempt: Account "${uid}" is not activate.`);
 
       throw new ForbiddenException('Account is not active.');
@@ -254,7 +255,5 @@ export class AuthenticationService {
     this.emitter.emit('sendRegistrationMail', email, username, token.token);
 
     this.logger.log('sendActivationMail: After event.');
-
-    // await this.mailService.sendRegistrationMail(email, username, token.token);
   }
 }

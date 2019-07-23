@@ -27,6 +27,10 @@ export class RoleService implements RepositoryFacade<Role> {
    * @param {EntityManager} transactionalEntityManager
    */
   public async delete(criteria: Criteria<Role>, transactionalEntityManager?: EntityManager): Promise<DeleteResult> {
+    if (transactionalEntityManager) {
+      return transactionalEntityManager.delete(Role, criteria);
+    }
+
     return this.roleRepository.delete(criteria);
   }
 
@@ -80,7 +84,7 @@ export class RoleService implements RepositoryFacade<Role> {
 
       return await this.roleRepository.save(role);
     } catch (e) {
-      this.logger.warn(e.code);
+      this.logger.error(`${e.code}: Could not fulfill the request to create a role "${role.name}".`);
 
       if (e.code === ResponseCodes.ER_DUP_ENTRY) {
         throw new ConflictException();

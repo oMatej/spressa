@@ -8,9 +8,9 @@ export class ChangePasswordBody {
 
   @IsNotEmpty()
   @Length(4, 128)
-  @MatchesProperty('confirmNewPassword')
-  readonly newPassword: string;
+  @MatchesProperty('confirmPassword')
+  readonly password: string;
 
-  @MatchesProperty('newPassword')
-  readonly confirmNewPassword: string;
+  @MatchesProperty('password')
+  readonly confirmPassword: string;
 }

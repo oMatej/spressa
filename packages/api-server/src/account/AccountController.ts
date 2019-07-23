@@ -6,6 +6,7 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -63,7 +64,7 @@ export class AccountController {
    */
   @Get('/:id')
   @Authorize(Permission.ADMIN, Permission.ACCOUNT_READ)
-  async findAccount(@Param('id') id: string): Promise<Account> {
+  async findAccount(@Param('id', new ParseUUIDPipe()) id: string): Promise<Account> {
     return this.accountService.findOneById(id);
   }
 
@@ -72,7 +73,7 @@ export class AccountController {
    */
   @Delete('/:id')
   @Authorize(Permission.ADMIN, Permission.ACCOUNT_DELETE_OWNER)
-  async deleteAccount(@Param('id') id: string): Promise<void> {
+  async deleteAccount(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
     return this.accountService.deleteAccount(id);
   }
 
@@ -83,7 +84,10 @@ export class AccountController {
   @HttpCode(200)
   @Authorize(Permission.ADMIN, Permission.ACCOUNT_UPDATE_OWNER)
   @UsePipes(new ValidationPipe({ whitelist: true, validateCustomDecorators: true }))
-  async changePassword(@Param('id') id: string, @Body() changePasswordBody: ChangePasswordBody): Promise<void> {
+  async changePassword(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() changePasswordBody: ChangePasswordBody,
+  ): Promise<void> {
     return this.accountService.changeAccountPassword(id, changePasswordBody);
   }
 
@@ -92,7 +96,7 @@ export class AccountController {
    */
   @Get('/:id/roles')
   @Authorize(Permission.ADMIN)
-  async findRolesByAccountId(@Param('id') id: string): Promise<Role[]> {
+  async findRolesByAccountId(@Param('id', new ParseUUIDPipe()) id: string): Promise<Role[]> {
     return this.accountService.findAccountRoles(id);
   }
 

@@ -48,17 +48,10 @@ export class AccountService implements InjectableGuardService, RepositoryFacade<
   }
 
   /**
-   * @param id
-   */
-  public async getAccountId(id: string): Promise<string> {
-    return id;
-  }
-
-  /**
    * Create an instance of Account entity.
    * @param {DeepPartial<Account>} entityLike
    */
-  create(entityLike: DeepPartial<Account>): Account {
+  public create(entityLike: DeepPartial<Account>): Account {
     return this.accountRepository.create(entityLike);
   }
 
@@ -66,7 +59,7 @@ export class AccountService implements InjectableGuardService, RepositoryFacade<
    * @param {Criteria<Account>} criteria
    * @param {EntityManager} transactionalEntityManager
    */
-  public delete(criteria: Criteria<Account>, transactionalEntityManager?: EntityManager): Promise<DeleteResult> {
+  public async delete(criteria: Criteria<Account>, transactionalEntityManager?: EntityManager): Promise<DeleteResult> {
     if (transactionalEntityManager) {
       return transactionalEntityManager.delete(Account, criteria);
     }
@@ -168,7 +161,7 @@ export class AccountService implements InjectableGuardService, RepositoryFacade<
   public async changeAccountPassword(id: string, changePasswordBody: ChangePasswordBody): Promise<void> {
     this.logger.log(`changePassword: Attempted to change password of account "${id}".`);
 
-    const { currentPassword, newPassword } = changePasswordBody;
+    const { currentPassword, password } = changePasswordBody;
 
     const account: Account = await this.findOneById(id);
 
@@ -178,7 +171,7 @@ export class AccountService implements InjectableGuardService, RepositoryFacade<
       throw new UnauthorizedException();
     }
 
-    account.password = await this.hash(newPassword);
+    account.password = await this.hash(password);
 
     this.logger.log(`changePassword: Successfully changed password of "${id}" account.`);
 
@@ -263,6 +256,13 @@ export class AccountService implements InjectableGuardService, RepositoryFacade<
     this.logger.log(`findAccountRoles: Fulfilled request.`);
 
     return account.roles;
+  }
+
+  /**
+   * @param id
+   */
+  public async getAccountId(id: string): Promise<string> {
+    return id;
   }
 
   /**

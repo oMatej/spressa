@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
@@ -36,33 +37,33 @@ export class RoleController {
   @SerializeOptions({
     groups: [Permission.ADMIN],
   })
-  async getAll(): Promise<Role[]> {
+  async findRoles(): Promise<Role[]> {
     return this.roleService.find();
   }
 
   @Post('/')
   @Authorize(Permission.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async create(@Body() createRoleBody: CreateRole) {
+  async createRole(@Body() createRoleBody: CreateRole) {
     return this.roleService.createRole(createRoleBody);
   }
 
   @Put('/:id')
   @Authorize(Permission.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async update(@Param('id') id: string, @Body() updateRoleBody: UpdateRole): Promise<Role> {
+  async updateRole(@Param('id', new ParseUUIDPipe()) id: string, @Body() updateRoleBody: UpdateRole): Promise<Role> {
     return this.roleService.updateRole(id, updateRoleBody);
   }
 
   @Delete('/:id')
   @Authorize(Permission.ADMIN)
-  async delete(@Param('id') id: string): Promise<DeleteResult> {
+  async deleteRole(@Param('id', new ParseUUIDPipe()) id: string): Promise<DeleteResult> {
     return this.roleService.delete(id);
   }
 
   @Patch('/:id/status')
   @Authorize(Permission.ADMIN)
-  async toggleStatus(@Param('id') id: string): Promise<Role> {
+  async toggleRoleStatus(@Param('id', new ParseUUIDPipe()) id: string): Promise<Role> {
     return this.roleService.toggleRoleStatus(id);
   }
 }

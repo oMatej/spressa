@@ -1,10 +1,12 @@
 import { BeforeInsert, BeforeUpdate, Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
 import { Exclude, Expose } from 'class-transformer';
 
-import { BaseEntity } from '../../commons/entities';
-import { Token } from '../../token/entities';
 import { Role } from '../../authorization/entities';
 import { Permission } from '../../authorization/enums';
+import { BaseEntity } from '../../commons/entities';
+import { Token } from '../../token/entities';
+
+import { AccountStatus } from '../enums';
 
 @Exclude()
 @Entity({ name: 'accounts' })
@@ -20,9 +22,9 @@ export class Account extends BaseEntity {
   @Column({ name: 'password' })
   password: string;
 
-  @Column({ name: 'is_activated', type: 'bool', default: false })
+  @Column({ name: 'status', type: 'enum', enum: AccountStatus, default: AccountStatus.CREATED })
   @Expose({ groups: [Permission.ADMIN] })
-  isActivated: boolean;
+  status: AccountStatus;
 
   @OneToMany(type => Token, token => token.account)
   tokens: Token[];
