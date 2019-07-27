@@ -2,8 +2,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from 'nestjs-config';
 
 import { Account } from '../account/entities';
-import { Token } from '../token/entities';
 import { Role } from '../authorization/entities';
+import { Comment, Metadata, Page, Post } from '../content/entities';
+import { Token } from '../token/entities';
 
 export const TypeORMProvider = TypeOrmModule.forRootAsync({
   imports: [ConfigModule],
@@ -13,7 +14,7 @@ export const TypeORMProvider = TypeOrmModule.forRootAsync({
 
     return {
       ...config,
-      entities: [Account, Role, Token],
+      entities: [Account, Comment, Metadata, Page, Post, Role, Token],
     };
   },
 });

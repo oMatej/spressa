@@ -241,6 +241,7 @@ export class AuthenticationService {
     if (isString(emailOrAccount)) {
       account = await this.accountService.findOne({ where: { email: emailOrAccount, isActivated: false } });
 
+      // @ts-ignore
       await this.tokenService.delete({ accountId: account.id, type: TokenTypes.ACTIVATE_TOKEN });
 
       token = await this.tokenService.generateActivateToken(account, ip);

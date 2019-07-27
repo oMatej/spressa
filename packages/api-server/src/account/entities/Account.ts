@@ -4,6 +4,7 @@ import { Exclude, Expose } from 'class-transformer';
 import { Role } from '../../authorization/entities';
 import { Permission } from '../../authorization/enums';
 import { BaseEntity } from '../../commons/entities';
+import { Post } from '../../content/entities';
 import { Token } from '../../token/entities';
 
 import { AccountStatus } from '../enums';
@@ -26,17 +27,20 @@ export class Account extends BaseEntity {
   @Expose({ groups: [Permission.ADMIN] })
   status: AccountStatus;
 
-  @OneToMany(type => Token, token => token.account)
-  tokens: Token[];
+  @OneToMany(type => Post, post => post.account)
+  posts: Post[];
 
   @Expose({ groups: [Permission.ADMIN] })
   @ManyToMany(type => Role, role => role.accounts)
   @JoinTable({
     name: 'account_roles',
-    joinColumn: { name: 'accountId', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'roleId', referencedColumnName: 'id' },
+    joinColumn: { name: 'account_id' },
+    inverseJoinColumn: { name: 'role_id' },
   })
   roles: Role[];
+
+  @OneToMany(type => Token, token => token.account)
+  tokens: Token[];
 
   @BeforeInsert()
   @BeforeUpdate()

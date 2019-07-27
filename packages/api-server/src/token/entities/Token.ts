@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Exclude, Expose } from 'class-transformer';
 
 import { BaseEntity } from '../../commons/entities';
@@ -23,9 +23,10 @@ export class Token extends BaseEntity {
   @Column({ name: 'expires_at', type: 'datetime', nullable: false })
   expiresAt: Date;
 
-  @Column()
+  @Column({ name: 'account_id' })
   accountId: string;
 
   @ManyToOne(type => Account, account => account.tokens, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'account_id' })
   account: Account;
 }
