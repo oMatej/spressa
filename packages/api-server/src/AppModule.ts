@@ -6,6 +6,7 @@ import { DatabaseModule } from './database';
 import { AccountModule } from './account';
 import { AuthenticationModule } from './authentication';
 import { AuthorizationModule } from './authorization';
+import { ContentModule } from './content';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuthorizationModule } from './authorization';
     AccountModule,
     AuthenticationModule,
     AuthorizationModule,
+    ContentModule,
   ],
   controllers: [],
   providers: [],

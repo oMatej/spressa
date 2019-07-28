@@ -1,4 +1,4 @@
-import { BeforeInsert, Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 import { Exclude, Expose } from 'class-transformer';
 
 import { Permission } from '../../authorization/enums';
